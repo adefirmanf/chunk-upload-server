@@ -1,6 +1,13 @@
 # Chunk Upload Server
 
+![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
+![Go](https://img.shields.io/badge/go-%2300ADD8.svg?style=for-the-badge&logo=go&logoColor=white)
+
+
 A lightweight Go server that implements the FilePond chunked upload protocol for resumable file uploads. This server handles large file uploads by splitting them into chunks, allowing for resume capabilities and better handling of network interruptions.
+
+## Demo
+Coming soon
 
 ## Features
 
