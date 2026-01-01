@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 )
 
 const uploadDir = "./tmp"
@@ -208,6 +209,61 @@ func health(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprint(w, `{"status":"ok"}`)
 }
 
+func cleanupOldFiles() {
+	log.Println("Running cleanup task...")
+	
+	entries, err := os.ReadDir(uploadDir)
+	if err != nil {
+		log.Printf("Error reading upload directory: %v", err)
+		return
+	}
+	
+	cutoffTime := time.Now().Add(-10 * time.Minute)
+	deletedCount := 0
+	
+	for _, entry := range entries {
+		filePath := filepath.Join(uploadDir, entry.Name())
+		
+		info, err := os.Stat(filePath)
+		if err != nil {
+			log.Printf("Error getting file info for %s: %v", filePath, err)
+			continue
+		}
+		
+		// Delete files/directories older than 10 minutes
+		if info.ModTime().Before(cutoffTime) {
+			if entry.IsDir() {
+				err = os.RemoveAll(filePath)
+			} else {
+				err = os.Remove(filePath)
+			}
+			
+			if err != nil {
+				log.Printf("Error deleting %s: %v", filePath, err)
+			} else {
+				log.Printf("Deleted old file/directory: %s (age: %v)", entry.Name(), time.Since(info.ModTime()).Round(time.Second))
+				deletedCount++
+			}
+		}
+	}
+	
+	if deletedCount > 0 {
+		log.Printf("Cleanup complete: deleted %d items", deletedCount)
+	} else {
+		log.Println("Cleanup complete: no old files to delete")
+	}
+}
+
+func startCleanupScheduler() {
+	ticker := time.NewTicker(5 * time.Minute) // Run every 5 minutes
+	go func() {
+		for range ticker.C {
+			cleanupOldFiles()
+		}
+	}()
+	log.Println("Cleanup scheduler started (runs every 5 minutes, deletes files older than 10 minutes)")
+}
+
 func main() {
 	// Create upload directory if it doesn't exist
 	if err := os.MkdirAll(uploadDir, 0755); err != nil {
@@ -216,6 +272,9 @@ func main() {
 
 	http.HandleFunc("/upload", upload)
 	http.HandleFunc("/health", health)
+
+	// Start cleanup scheduler
+	startCleanupScheduler()
 
 	log.Println("Server starting on :8090")
 	log.Fatal(http.ListenAndServe(":8090", nil))
