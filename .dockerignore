@@ -1,0 +1,9 @@
+# Binaries
+main
+chunk-upload-server
+
+# Directories
+tmp/
+
+# Go
+go.sum
