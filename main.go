@@ -195,6 +195,19 @@ func handleHead(w http.ResponseWriter, req *http.Request, transferID string) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func health(w http.ResponseWriter, req *http.Request) {
+	setCORSHeaders(w)
+	
+	if req.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, `{"status":"ok"}`)
+}
+
 func main() {
 	// Create upload directory if it doesn't exist
 	if err := os.MkdirAll(uploadDir, 0755); err != nil {
@@ -202,6 +215,7 @@ func main() {
 	}
 
 	http.HandleFunc("/upload", upload)
+	http.HandleFunc("/health", health)
 
 	log.Println("Server starting on :8090")
 	log.Fatal(http.ListenAndServe(":8090", nil))
